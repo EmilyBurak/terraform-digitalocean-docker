@@ -1,0 +1,26 @@
+#cloud-config
+
+# Add non-default user with password sudoless and ssh key
+users:
+  - default
+  - name: user
+    shell: /bin/bash
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    groups: users, admin
+    ssh_authorized_keys:
+      #- Your SSH public key(tf-digitalocean.pub) here!
+
+# Modify sshhd_config to disallow root login, restart ssh, install and run Docker
+runcmd:
+  - sed -i -e '/^PermitRootLogin/s/^.*$/PermitRootLogin no/' /etc/ssh/sshd_config
+  - sed -i -e '$aAllowUsers user' /etc/ssh/sshd_config
+  - sudo systemctl restart ssh.service
+  - sudo ufw allow OpenSSH
+  - sudo ufw enable
+  - sudo apt update
+  - sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+  - curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+  - sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu bionic stable"
+  - sudo apt update
+  - sudo apt install -y docker-ce
+  - sudo systemctl start docker
